@@ -1,641 +1,705 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>象棋占卜 · 五子解惑 / 命運解碼室</title>
-<style>
-  :root {
-    --bg: #0d0d12;
-    --card: #16161f;
-    --gold: #d4af37;
-    --gold-dim: #a88b2d;
-    --red: #e63946;
-    --text: #e8e6e3;
-    --muted: #9a9590;
-    --line: #2a2a35;
-    --red-piece: #c23b22;
-    --black-piece: #2c3e50;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 20px 16px 60px;
-  }
-  h1 { display: none; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>象棋占卜｜五子解惑・命運解碼室</title>
 
-  /* 頂部切換 */
-  .mode-tabs {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 18px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  .mode-tab {
-    padding: 10px 22px;
-    border-radius: 999px;
-    border: 1px solid var(--gold-dim);
-    background: transparent;
-    color: var(--gold);
-    font-size: 15px;
-    cursor: pointer;
-    transition: all .25s;
-  }
-  .mode-tab.active {
-    background: linear-gradient(135deg, #c9a227, #8a6d1b);
-    color: #1a1205;
-    border-color: transparent;
-    font-weight: 600;
-    box-shadow: 0 0 20px rgba(212,175,55,.35);
-  }
-  .mode-tab:hover:not(.active) {
-    background: rgba(212,175,55,.12);
-  }
+  <style>
+    :root {
+      --bg: #0d0d12;
+      --card: #16161f;
+      --card-dark: #111119;
+      --gold: #d4af37;
+      --gold-dark: #8d711b;
+      --gold-line: #5b4d25;
+      --red: #f33f50;
+      --red-piece: #ff705f;
+      --black-piece: #a8c7e5;
+      --text: #e8e6e3;
+      --muted: #9c99a1;
+      --line: #2f2f3c;
+    }
 
-  /* 次要按鈕列 */
-  .sub-actions {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 28px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  .sub-btn {
-    padding: 7px 16px;
-    border-radius: 999px;
-    border: 1px solid #3a3a48;
-    background: #1c1c26;
-    color: var(--muted);
-    font-size: 13px;
-    cursor: pointer;
-    transition: .2s;
-  }
-  .sub-btn:hover, .sub-btn.active {
-    border-color: var(--gold-dim);
-    color: var(--gold);
-    background: rgba(212,175,55,.08);
-  }
+    * {
+      box-sizing: border-box;
+    }
 
-  /* 主卡片 */
-  .panel {
-    width: 100%;
-    max-width: 520px;
-    background: var(--card);
-    border-radius: 20px;
-    border: 1px solid var(--line);
-    padding: 28px 20px 32px;
-    position: relative;
-    display: none;
-  }
-  .panel.active { display: block; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 26px 16px 60px;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top, rgba(212, 175, 55, 0.08), transparent 30%),
+        var(--bg);
+      font-family: "Noto Sans TC", "Microsoft JhengHei", Arial, sans-serif;
+    }
 
-  /* ===== 五子佈局 ===== */
-  .five-board {
-    position: relative;
-    width: 280px;
-    height: 280px;
-    margin: 10px auto 30px;
-  }
-  .slot {
-    position: absolute;
-    width: 72px;
-    height: 72px;
-    border-radius: 50%;
-    border: 2px dashed #5a4e2e;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 28px;
-    font-weight: 700;
-    cursor: default;
-    transition: .25s;
-    background: #0f0f15;
-  }
-  .slot.filled {
-    border-style: solid;
-    border-color: var(--gold-dim);
-    box-shadow: 0 0 12px rgba(212,175,55,.25);
-  }
-  .slot.center {
-    border: 3px solid var(--red);
-    box-shadow: 0 0 18px rgba(230,57,70,.45);
-  }
-  .slot .piece-char {
-    line-height: 1;
-  }
-  .slot .num {
-    position: absolute;
-    font-size: 12px;
-    color: var(--muted);
-    top: -18px;
-    left: 50%;
-    transform: translateX(-50%);
-  }
-  /* 位置 */
-  .slot[data-pos="1"] { top: 50%; left: 50%; transform: translate(-50%,-50%); }
-  .slot[data-pos="2"] { top: 50%; left: 0; transform: translateY(-50%); }
-  .slot[data-pos="3"] { top: 50%; right: 0; transform: translateY(-50%); }
-  .slot[data-pos="4"] { top: 0; left: 50%; transform: translateX(-50%); }
-  .slot[data-pos="5"] { bottom: 0; left: 50%; transform: translateX(-50%); }
+    button {
+      font-family: inherit;
+    }
 
-  .hint {
-    text-align: center;
-    color: var(--muted);
-    font-size: 14px;
-    margin-bottom: 18px;
-    line-height: 1.5;
-  }
+    .app {
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto;
+    }
 
-  /* 棋子選擇區 */
-  .piece-palette {
-    display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    gap: 8px;
-    margin: 0 auto 20px;
-    max-width: 420px;
-  }
-  .piece-btn {
-    aspect-ratio: 1;
-    border-radius: 50%;
-    border: 2px solid #3a3a48;
-    background: #1a1a24;
-    color: #ddd;
-    font-size: 20px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: .15s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-  }
-  .piece-btn.red { color: #ff6b5b; border-color: #5a3030; }
-  .piece-btn.black { color: #a8c0d8; border-color: #2a3a4a; }
-  .piece-btn:hover:not(:disabled) {
-    transform: scale(1.08);
-    border-color: var(--gold);
-  }
-  .piece-btn:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-    transform: none;
-  }
-  .piece-btn.selected {
-    border-color: var(--gold);
-    box-shadow: 0 0 0 2px rgba(212,175,55,.4);
-    background: #2a2410;
-  }
+    /* 頂部模式切換 */
+    .mode-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 14px;
+      margin-bottom: 24px;
+    }
 
-  .palette-title {
-    text-align: center;
-    font-size: 13px;
-    color: var(--gold-dim);
-    margin-bottom: 10px;
-    letter-spacing: 1px;
-  }
+    .mode-tab {
+      appearance: none;
+      border: 1px solid var(--gold-dark);
+      border-radius: 999px;
+      padding: 14px 25px;
+      color: var(--gold);
+      background: transparent;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
 
-  .ctrl-row {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    flex-wrap: wrap;
-    margin-top: 8px;
-  }
-  .btn {
-    padding: 11px 24px;
-    border-radius: 10px;
-    border: none;
-    font-size: 15px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: .2s;
-  }
-  .btn-primary {
-    background: linear-gradient(135deg, #c9a227, #8a6d1b);
-    color: #1a1205;
-  }
-  .btn-primary:hover { filter: brightness(1.1); }
-  .btn-primary:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-    filter: none;
-  }
-  .btn-ghost {
-    background: transparent;
-    border: 1px solid #3a3a48;
-    color: var(--muted);
-  }
-  .btn-ghost:hover {
-    border-color: var(--gold-dim);
-    color: var(--gold);
-  }
+    .mode-tab:hover {
+      background: rgba(212, 175, 55, 0.1);
+    }
 
-  /* 結果區 */
-  .result-box {
-    margin-top: 24px;
-    padding: 18px;
-    border-radius: 14px;
-    background: #12121a;
-    border: 1px solid var(--line);
-    display: none;
-    line-height: 1.7;
-    font-size: 14.5px;
-  }
-  .result-box.show { display: block; }
-  .result-box h3 {
-    color: var(--gold);
-    margin-bottom: 10px;
-    font-size: 16px;
-  }
-  .result-meta {
-    color: var(--muted);
-    font-size: 12px;
-    margin-bottom: 8px;
-  }
+    .mode-tab.active {
+      color: #1c1504;
+      border-color: transparent;
+      background: linear-gradient(135deg, #d3ae2c, #8f701a);
+      box-shadow: 0 0 20px rgba(212, 175, 55, 0.32);
+    }
 
-  /* ===== 全盤模式 ===== */
-  .full-board-wrap {
-    overflow-x: auto;
-    padding-bottom: 10px;
-  }
-  .xiangqi-board {
-    display: grid;
-    grid-template-columns: repeat(9, 36px);
-    grid-template-rows: repeat(10, 36px);
-    gap: 0;
-    margin: 0 auto;
-    background: #1a1a22;
-    border: 2px solid #4a3f28;
-    width: fit-content;
-    position: relative;
-  }
-  .cell {
-    width: 36px;
-    height: 36px;
-    border: 1px solid #2e2e38;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    font-weight: 700;
-    cursor: pointer;
-    user-select: none;
-  }
-  .cell.red-p { color: #ff6b5b; }
-  .cell.black-p { color: #a8c0d8; }
-  .cell.river {
-    background: rgba(40,60,90,.25);
-  }
-  .board-actions {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    margin: 18px 0 8px;
-    flex-wrap: wrap;
-  }
-  .full-hint {
-    text-align: center;
-    font-size: 13px;
-    color: var(--muted);
-    margin-bottom: 12px;
-  }
+    /* 面板 */
+    .panel {
+      display: none;
+      padding: 30px 20px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: rgba(22, 22, 31, 0.98);
+      box-shadow: 0 16px 50px rgba(0, 0, 0, 0.25);
+    }
 
-  footer {
-    margin-top: 40px;
-    font-size: 12px;
-    color: #555;
-    text-align: center;
-  }
+    .panel.active {
+      display: block;
+    }
 
-  @media (max-width: 480px) {
-    .five-board { width: 240px; height: 240px; }
-    .slot { width: 62px; height: 62px; font-size: 24px; }
-    .piece-palette { grid-template-columns: repeat(8, 1fr); gap: 6px; }
-    .piece-btn { font-size: 16px; }
+    /* 五子模式分類按鈕 */
+    .sub-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 26px;
+    }
+
+    .sub-btn {
+      padding: 10px 17px;
+      border: 1px solid #3b3b4b;
+      border-radius: 999px;
+      color: var(--muted);
+      background: #1c1c27;
+      cursor: pointer;
+      font-size: 14px;
+      transition: 0.2s ease;
+    }
+
+    .sub-btn:hover,
+    .sub-btn.active {
+      color: var(--gold);
+      border-color: var(--gold-dark);
+      background: rgba(212, 175, 55, 0.1);
+    }
+
+    /* 五子棋盤 */
+    .five-board {
+      position: relative;
+      width: 290px;
+      height: 290px;
+      margin: 4px auto 25px;
+    }
+
+    .slot {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 76px;
+      height: 76px;
+      border: 2px dashed var(--gold-line);
+      border-radius: 50%;
+      background: #101017;
+      font-size: 31px;
+      font-weight: 800;
+      transition: 0.2s ease;
+    }
+
+    .slot.filled {
+      border-style: solid;
+      border-color: var(--gold-dark);
+      box-shadow: 0 0 16px rgba(212, 175, 55, 0.16);
+    }
+
+    .slot.center {
+      border: 4px solid var(--red);
+      box-shadow: 0 0 22px rgba(243, 63, 80, 0.4);
+    }
+
+    .slot-number {
+      position: absolute;
+      top: -22px;
+      left: 50%;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      transform: translateX(-50%);
+    }
+
+    .slot[data-pos="1"] {
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .slot[data-pos="2"] {
+      top: 50%;
+      left: 0;
+      transform: translateY(-50%);
+    }
+
+    .slot[data-pos="3"] {
+      top: 50%;
+      right: 0;
+      transform: translateY(-50%);
+    }
+
+    .slot[data-pos="4"] {
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .slot[data-pos="5"] {
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .hint {
+      margin: 0 0 16px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.7;
+      font-size: 14px;
+    }
+
+    .palette-title {
+      margin: 14px 0 12px;
+      color: var(--gold);
+      text-align: center;
+      font-size: 14px;
+      letter-spacing: 1px;
+    }
+
+    /*
+      重要修正：
+      棋子按鈕直接存在 HTML，不需要等待 JavaScript render。
+      因此畫面一定會顯示 32 顆棋子。
+    */
+    .piece-palette {
+      display: grid;
+      grid-template-columns: repeat(8, minmax(38px, 1fr));
+      gap: 8px;
+      width: 100%;
+      max-width: 480px;
+      min-height: 220px;
+      margin: 0 auto 22px;
+      padding: 12px;
+      border: 1px solid #292936;
+      border-radius: 16px;
+      background: #111119;
+    }
+
+    .piece-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      aspect-ratio: 1 / 1;
+      min-width: 0;
+      border: 2px solid #3d3d4a;
+      border-radius: 50%;
+      color: #ddd;
+      background: #1b1b26;
+      font-size: clamp(16px, 3.2vw, 22px);
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+    }
+
+    .piece-btn.red {
+      color: var(--red-piece);
+      border-color: #663434;
+    }
+
+    .piece-btn.black {
+      color: var(--black-piece);
+      border-color: #30455d;
+    }
+
+    .piece-btn:hover:not(:disabled) {
+      z-index: 1;
+      border-color: var(--gold);
+      transform: scale(1.1);
+    }
+
+    .piece-btn.selected,
+    .piece-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .piece-btn.selected {
+      border-color: var(--gold);
+      background: #362b0d;
+    }
+
+    .ctrl-row,
+    .board-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 11px;
+      padding: 12px 20px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    .btn-primary {
+      color: #1e1704;
+      background: linear-gradient(135deg, #d4af37, #8d6d19);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      filter: brightness(1.13);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .btn-ghost {
+      border: 1px solid #41414d;
+      color: var(--muted);
+      background: transparent;
+    }
+
+    .btn-ghost:hover {
+      color: var(--gold);
+      border-color: var(--gold-dark);
+    }
+
+    /* 解讀結果 */
+    .result-box {
+      display: none;
+      margin-top: 25px;
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--card-dark);
+      color: var(--text);
+      line-height: 1.8;
+      font-size: 14px;
+    }
+
+    .result-box.show {
+      display: block;
+    }
+
+    .result-box h3 {
+      margin: 0 0 12px;
+      color: var(--gold);
+      font-size: 17px;
+    }
+
+    .result-box p {
+      margin: 0 0 14px;
+    }
+
+    .result-meta {
+      margin-bottom: 10px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .notice {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    /* 全盤模式 */
+    .full-hint {
+      margin: 0 0 18px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.7;
+      font-size: 14px;
+    }
+
+    .full-board-wrap {
+      overflow-x: auto;
+      margin-top: 22px;
+      padding: 5px 2px 12px;
+    }
+
     .xiangqi-board {
-      grid-template-columns: repeat(9, 30px);
-      grid-template-rows: repeat(10, 30px);
+      display: grid;
+      grid-template-columns: repeat(9, 42px);
+      grid-template-rows: repeat(10, 42px);
+      width: max-content;
+      margin: 0 auto;
+      border: 2px solid #665124;
+      background: #17171f;
     }
-    .cell { width: 30px; height: 30px; font-size: 15px; }
-  }
-</style>
-</head>
-<body>
 
-<div class="mode-tabs">
-  <button class="mode-tab active" data-mode="five">象棋占卜 · 五子解惑</button>
-  <button class="mode-tab" data-mode="full">命運解碼室 · 三十二全盤</button>
-</div>
-
-<!-- ========== 五子解惑 ========== -->
-<div id="panel-five" class="panel active">
-  <div class="sub-actions">
-    <button class="sub-btn active" data-type="single">單點解惑</button>
-    <button class="sub-btn" data-type="choice">當下抉擇</button>
-    <button class="sub-btn" data-type="free">免八字翻棋</button>
-  </div>
-
-  <div class="five-board" id="fiveBoard">
-    <div class="slot center" data-pos="1"><span class="num">1</span><span class="piece-char"></span></div>
-    <div class="slot" data-pos="2"><span class="num">2</span><span class="piece-char"></span></div>
-    <div class="slot" data-pos="3"><span class="num">3</span><span class="piece-char"></span></div>
-    <div class="slot" data-pos="4"><span class="num">4</span><span class="piece-char"></span></div>
-    <div class="slot" data-pos="5"><span class="num">5</span><span class="piece-char"></span></div>
-  </div>
-
-  <p class="hint" id="fiveHint">請憑直覺點選 5 顆棋子，依序填入位置 1～5</p>
-
-  <div class="palette-title">— 三十二棋子庫（點選加入）—</div>
-  <div class="piece-palette" id="piecePalette"></div>
-
-  <div class="ctrl-row">
-    <button class="btn btn-ghost" id="btnResetFive">清除重選</button>
-    <button class="btn btn-primary" id="btnDivine" disabled>開始解盤</button>
-  </div>
-
-  <div class="result-box" id="fiveResult"></div>
-</div>
-
-<!-- ========== 命運解碼室 全盤 ========== -->
-<div id="panel-full" class="panel">
-  <p class="full-hint">點擊棋盤上的棋子可翻轉／取下，或使用下方快速佈局。完成後可進行全盤解碼。</p>
-  <div class="board-actions">
-    <button class="btn btn-ghost" id="btnInitFull">標準開局</button>
-    <button class="btn btn-ghost" id="btnRandomFull">隨機散落</button>
-    <button class="btn btn-ghost" id="btnClearFull">清空棋盤</button>
-    <button class="btn btn-primary" id="btnDecodeFull">全盤解碼</button>
-  </div>
-  <div class="full-board-wrap">
-    <div class="xiangqi-board" id="fullBoard"></div>
-  </div>
-  <div class="result-box" id="fullResult"></div>
-</div>
-
-<footer>象棋卜卦 © 命理邏輯引擎 Demo</footer>
-
-<script>
-/* ========== 資料 ========== */
-const RED_PIECES = [
-  {n:'帥', c:'red'}, {n:'仕', c:'red'}, {n:'仕', c:'red'},
-  {n:'相', c:'red'}, {n:'相', c:'red'},
-  {n:'馬', c:'red'}, {n:'馬', c:'red'},
-  {n:'車', c:'red'}, {n:'車', c:'red'},
-  {n:'炮', c:'red'}, {n:'炮', c:'red'},
-  {n:'兵', c:'red'}, {n:'兵', c:'red'}, {n:'兵', c:'red'}, {n:'兵', c:'red'}, {n:'兵', c:'red'}
-];
-const BLACK_PIECES = [
-  {n:'將', c:'black'}, {n:'士', c:'black'}, {n:'士', c:'black'},
-  {n:'象', c:'black'}, {n:'象', c:'black'},
-  {n:'馬', c:'black'}, {n:'馬', c:'black'},
-  {n:'車', c:'black'}, {n:'車', c:'black'},
-  {n:'砲', c:'black'}, {n:'砲', c:'black'},
-  {n:'卒', c:'black'}, {n:'卒', c:'black'}, {n:'卒', c:'black'}, {n:'卒', c:'black'}, {n:'卒', c:'black'}
-];
-const ALL_PIECES = [...RED_PIECES, ...BLACK_PIECES];
-
-/* 五子狀態 */
-let selectedPieces = []; // {n, c, idx}
-let currentType = 'single';
-
-/* ========== 初始化五子棋盤選擇區 ========== */
-function renderPalette() {
-  const pal = document.getElementById('piecePalette');
-  pal.innerHTML = '';
-  ALL_PIECES.forEach((p, idx) => {
-    const btn = document.createElement('button');
-    btn.className = `piece-btn ${p.c}`;
-    btn.textContent = p.n;
-    btn.dataset.idx = idx;
-    btn.title = (p.c === 'red' ? '紅' : '黑') + p.n;
-    btn.addEventListener('click', () => onSelectPiece(idx, btn));
-    pal.appendChild(btn);
-  });
-}
-
-function onSelectPiece(idx, btn) {
-  if (selectedPieces.length >= 5) return;
-  if (btn.disabled) return;
-
-  const p = ALL_PIECES[idx];
-  selectedPieces.push({ ...p, idx });
-  btn.disabled = true;
-  btn.classList.add('selected');
-
-  updateFiveSlots();
-  document.getElementById('btnDivine').disabled = selectedPieces.length < 5;
-
-  if (selectedPieces.length === 5) {
-    document.getElementById('fiveHint').textContent = '已選滿 5 子，可點「開始解盤」或清除重選';
-  } else {
-    document.getElementById('fiveHint').textContent = `已選 ${selectedPieces.length}/5 顆，請繼續憑直覺選擇`;
-  }
-}
-
-function updateFiveSlots() {
-  for (let pos = 1; pos <= 5; pos++) {
-    const slot = document.querySelector(`.slot[data-pos="${pos}"]`);
-    const charEl = slot.querySelector('.piece-char');
-    const piece = selectedPieces[pos - 1];
-    if (piece) {
-      charEl.textContent = piece.n;
-      charEl.style.color = piece.c === 'red' ? '#ff6b5b' : '#a8c0d8';
-      slot.classList.add('filled');
-    } else {
-      charEl.textContent = '';
-      slot.classList.remove('filled');
+    .cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      border: 1px solid #343440;
+      font-size: 21px;
+      font-weight: 800;
+      cursor: pointer;
+      user-select: none;
     }
-  }
-}
 
-function resetFive() {
-  selectedPieces = [];
-  document.querySelectorAll('.piece-btn').forEach(b => {
-    b.disabled = false;
-    b.classList.remove('selected');
-  });
-  updateFiveSlots();
-  document.getElementById('btnDivine').disabled = true;
-  document.getElementById('fiveHint').textContent = '請憑直覺點選 5 顆棋子，依序填入位置 1～5';
-  document.getElementById('fiveResult').classList.remove('show');
-  document.getElementById('fiveResult').innerHTML = '';
-}
+    .cell:hover {
+      background: rgba(212, 175, 55, 0.08);
+    }
 
-/* ========== 解盤邏輯（示例命理引擎） ========== */
-const POS_MEANING = {
-  1: '中宮／核心動機與當下狀態',
-  2: '左輔／貴人、支持或過去影響',
-  3: '右弼／阻礙、對手或未來牽引',
-  4: '天位／目標、理想與外在機遇',
-  5: '地位／根基、現實條件與結果'
-};
+    .cell.river {
+      background: rgba(58, 76, 108, 0.22);
+    }
 
-const PIECE_MEANING = {
-  '帥': '主導、決策權、領導核心',
-  '將': '主控、意志、內在權威',
-  '仕': '輔助、忠貞、文書與謀略',
-  '士': '護衛、忠誠、內助',
-  '相': '穩守、資源、社會連結',
-  '象': '厚德、守成、庇蔭',
-  '馬': '行動、變通、快速推進',
-  '車': '衝力、直進、權威執行',
-  '炮': '間接、策略、爆發力',
-  '砲': '遠攻、計謀、意外變化',
-  '兵': '前進、累積、基層努力',
-  '卒': '推進、務實、一步一腳印'
-};
+    .red-p {
+      color: var(--red-piece);
+    }
 
-function divineFive() {
-  if (selectedPieces.length < 5) return;
+    .black-p {
+      color: var(--black-piece);
+    }
 
-  const typeLabel = {
-    single: '單點解惑',
-    choice: '當下抉擇',
-    free: '免八字翻棋'
-  }[currentType];
+    footer {
+      margin-top: 28px;
+      color: #5c5960;
+      text-align: center;
+      font-size: 12px;
+    }
 
-  let html = `<div class="result-meta">${typeLabel} · ${new Date().toLocaleString('zh-TW')}</div>`;
-  html += `<h3>五子格局解讀</h3>`;
-
-  selectedPieces.forEach((p, i) => {
-    const pos = i + 1;
-    const color = p.c === 'red' ? '紅' : '黑';
-    html += `<p><strong>位置 ${pos}（${POS_MEANING[pos]}）</strong><br>
-      → ${color}「${p.n}」：${PIECE_MEANING[p.n] || '變化之象'}<br>
-      ${interpretCombo(p, pos)}</p>`;
-  });
-
-  // 綜合
-  const redCount = selectedPieces.filter(p => p.c === 'red').length;
-  const hasKing = selectedPieces.some(p => p.n === '帥' || p.n === '將');
-  const hasCharge = selectedPieces.some(p => ['車','馬','炮','砲'].includes(p.n));
-
-  html += `<h3>綜合象意</h3><p>`;
-  if (currentType === 'choice') {
-    html += redCount >= 3
-      ? '紅勢較盛，偏向主動出擊、掌握主導權。若兩選一，宜選較積極、需付出行動的一方。'
-      : '黑勢沉穩，宜守中帶攻，或選擇較穩妥、有長期根基的選項。';
-  } else if (currentType === 'free') {
-    html += '免八字模式下，純以當下棋象呈現：';
-    html += hasKing ? '有主將坐鎮，核心意志清晰。' : '主將未現，目前宜多方觀察、勿強定方向。';
-    html += hasCharge ? '行動子力充足，變局將至。' : '多守成之象，宜厚積薄發。';
-  } else {
-    html += `目前紅黑比 ${redCount} : ${5 - redCount}。`;
-    html += hasKing ? '主帥／將出現，事有核心可依。' : '暫無主帥，問題尚在凝聚。';
-    html += hasCharge ? '車馬炮聯動之象，進展可期，但需防過剛折損。' : '多士象兵卒，宜穩紮穩打、以時間換空間。';
-  }
-  html += `</p><p style="color:var(--muted);font-size:12px;margin-top:12px">※ 本結果為命理邏輯引擎示範，僅供娛樂與自我反思參考。</p>`;
-
-  const box = document.getElementById('fiveResult');
-  box.innerHTML = html;
-  box.classList.add('show');
-  box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
-
-function interpretCombo(p, pos) {
-  if (pos === 1 && (p.n === '帥' || p.n === '將')) return '中宮有主，決心已定，宜果斷執行。';
-  if (pos === 1 && (p.n === '兵' || p.n === '卒')) return '核心尚在起步階段，需耐心堆疊。';
-  if ((pos === 2 || pos === 3) && (p.n === '車' || p.n === '馬')) return '側翼動力強，貴人或阻力皆來勢明確。';
-  if (pos === 5 && (p.n === '相' || p.n === '象' || p.n === '仕' || p.n === '士')) return '根基厚實，後盾可期。';
-  if (pos === 4 && (p.n === '炮' || p.n === '砲')) return '高位有間接助力或突發轉機。';
-  return '與此位置形成平衡或牽制之勢，宜順勢觀察。';
-}
-
-/* ========== 全盤模式 ========== */
-const BOARD_ROWS = 10;
-const BOARD_COLS = 9;
-
-// 標準開局座標 (row, col) 0-based，紅在下
-const STANDARD_SETUP = [
-  // 黑
-  [0,0,'車','black'],[0,1,'馬','black'],[0,2,'象','black'],[0,3,'士','black'],[0,4,'將','black'],
-  [0,5,'士','black'],[0,6,'象','black'],[0,7,'馬','black'],[0,8,'車','black'],
-  [2,1,'砲','black'],[2,7,'砲','black'],
-  [3,0,'卒','black'],[3,2,'卒','black'],[3,4,'卒','black'],[3,6,'卒','black'],[3,8,'卒','black'],
-  // 紅
-  [9,0,'車','red'],[9,1,'馬','red'],[9,2,'相','red'],[9,3,'仕','red'],[9,4,'帥','red'],
-  [9,5,'仕','red'],[9,6,'相','red'],[9,7,'馬','red'],[9,8,'車','red'],
-  [7,1,'炮','red'],[7,7,'炮','red'],
-  [6,0,'兵','red'],[6,2,'兵','red'],[6,4,'兵','red'],[6,6,'兵','red'],[6,8,'兵','red']
-];
-
-let boardState = Array.from({length: BOARD_ROWS}, () => Array(BOARD_COLS).fill(null));
-
-function renderFullBoard() {
-  const board = document.getElementById('fullBoard');
-  board.innerHTML = '';
-  for (let r = 0; r < BOARD_ROWS; r++) {
-    for (let c = 0; c < BOARD_COLS; c++) {
-      const cell = document.createElement('div');
-      cell.className = 'cell';
-      if (r === 4 || r === 5) cell.classList.add('river');
-      const piece = boardState[r][c];
-      if (piece) {
-        cell.textContent = piece.n;
-        cell.classList.add(piece.c === 'red' ? 'red-p' : 'black-p');
+    @media (max-width: 480px) {
+      body {
+        padding: 20px 10px 45px;
       }
-      cell.dataset.r = r;
-      cell.dataset.c = c;
-      cell.addEventListener('click', () => toggleCell(r, c));
-      board.appendChild(cell);
+
+      .panel {
+        padding: 24px 12px;
+        border-radius: 18px;
+      }
+
+      .mode-tab {
+        padding: 11px 16px;
+        font-size: 14px;
+      }
+
+      .five-board {
+        width: 250px;
+        height: 250px;
+      }
+
+      .slot {
+        width: 64px;
+        height: 64px;
+        font-size: 27px;
+      }
+
+      .piece-palette {
+        gap: 6px;
+        padding: 9px;
+      }
+
+      .xiangqi-board {
+        grid-template-columns: repeat(9, 34px);
+        grid-template-rows: repeat(10, 34px);
+      }
+
+      .cell {
+        width: 34px;
+        height: 34px;
+        font-size: 17px;
+      }
     }
-  }
-}
+  </style>
+</head>
 
-function toggleCell(r, c) {
-  // 簡單循環：空 → 隨機紅 → 隨機黑 → 空
-  const cur = boardState[r][c];
-  if (!cur) {
-    const pool = Math.random() > 0.5 ? RED_PIECES : BLACK_PIECES;
-    const p = pool[Math.floor(Math.random() * pool.length)];
-    boardState[r][c] = { n: p.n, c: p.c };
-  } else {
-    boardState[r][c] = null;
-  }
-  renderFullBoard();
-}
+<body>
+  <main class="app">
 
-function initStandard() {
-  boardState = Array.from({length: BOARD_ROWS}, () => Array(BOARD_COLS).fill(null));
-  STANDARD_SETUP.forEach(([r,c,n,color]) => {
-    boardState[r][c] = { n, c: color };
-  });
-  renderFullBoard();
-  hideFullResult();
-}
+    <nav class="mode-tabs" aria-label="功能模式">
+      <button type="button" class="mode-tab active" data-mode="five">
+        象棋占卜・五子解惑
+      </button>
+      <button type="button" class="mode-tab" data-mode="full">
+        命運解碼室・三十二全盤
+      </button>
+    </nav>
 
-function randomScatter() {
-  boardState = Array.from({length: BOARD_ROWS}, () => Array(BOARD_COLS).fill(null));
-  const positions = [];
-  for (let r=0;r<BOARD_ROWS;r++) for (let c=0;c<BOARD_COLS;c++) positions.push([r,c]);
-  // shuffle
-  for (let i = positions.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [positions[i], positions[j]] = [positions[j], positions[i]];
-  }
-  ALL_PIECES.forEach((p, i) => {
-    if (i < positions.length) {
-      const [r,c] = positions[i];
-      boardState[r][c] = { n: p.n, c: p.c };
+    <!-- 五子解惑 -->
+    <section id="panel-five" class="panel active">
+      <div class="sub-actions">
+        <button type="button" class="sub-btn active" data-type="single">單點解惑</button>
+        <button type="button" class="sub-btn" data-type="choice">當下抉擇</button>
+        <button type="button" class="sub-btn" data-type="free">免八字翻棋</button>
+      </div>
+
+      <div class="five-board" aria-label="五子占卜位置">
+        <div class="slot center" data-pos="1">
+          <span class="slot-number">1</span>
+          <span class="piece-char"></span>
+        </div>
+        <div class="slot" data-pos="2">
+          <span class="slot-number">2</span>
+          <span class="piece-char"></span>
+        </div>
+        <div class="slot" data-pos="3">
+          <span class="slot-number">3</span>
+          <span class="piece-char"></span>
+        </div>
+        <div class="slot" data-pos="4">
+          <span class="slot-number">4</span>
+          <span class="piece-char"></span>
+        </div>
+        <div class="slot" data-pos="5">
+          <span class="slot-number">5</span>
+          <span class="piece-char"></span>
+        </div>
+      </div>
+
+      <p id="fiveHint" class="hint">
+        請憑直覺依序點選下方 5 顆棋子，填入位置 1～5。
+      </p>
+
+      <div class="palette-title">— 三十二棋子庫（點選加入）—</div>
+
+      <!--
+        重要：32 顆棋子固定寫在 HTML。
+        即使 JavaScript 未執行，也不會發生棋子庫空白的問題。
+      -->
+      <div id="piecePalette" class="piece-palette" aria-label="三十二棋子庫">
+
+        <!-- 紅方 16 子 -->
+        <button type="button" class="piece-btn red" data-piece-id="r-king" data-name="帥" data-color="red" title="紅帥">帥</button>
+        <button type="button" class="piece-btn red" data-piece-id="r-advisor-1" data-name="仕" data-color="red" title="紅仕">仕</button>
+        <button type="button" class="piece-btn red" data-piece-id="r-advisor-2" data-name="仕" data-color="red" title="紅仕">仕</button>
+        <button type="button" class="piece-btn red" data-piece-id="r-elephant-1" data-name="相" data-color="red" title="紅相">相</button>
+        <button type="button" class="piece-btn red" data-piece-id="r-elephant-2" data-name="相" data-color="red" title="紅相">相</button>
+        <button type="button" class="piece-btn red" data-piece-id="r-horse-1" data-name="馬" data-color="red" title="紅馬">馬</button>
+        <button type="button" class="piece-btn red" data-piece-id="r-horse-2" data-name="馬" data-color="red" title="紅馬">馬</button>
+        <button type="button" class="piece-btn red" data-piece-id="r-rook-1" data-name="車" data-color="red" title="紅車">車</button>
+        <button type="button" class="piece-btn red" data-piece-id="r-rook-2" data-name="車" data-color="red" title="紅車">車</button>
+        <button type="button" class="piece-btn red" data-piece-id="r-cannon-1" data-name="炮" data-color="red" title="紅炮">炮</button>
+        <button type="button" class="piece-btn red" data-piece-id="r-cannon-2" data-name="炮" data-color="red" title="紅炮">炮</button>
+        <button type="button" class="piece-btn red" data-piece-id="r-pawn-1" data-name="兵" data-color="red" title="紅兵">兵</button>
+        <button type="button" class="piece-btn red" data-piece-id="r-pawn-2" data-name="兵" data-color="red" title="紅兵">兵</button>
+        <button type="button" class="piece-btn red" data-piece-id="r-pawn-3" data-name="兵" data-color="red" title="紅兵">兵</button>
+        <button type="button" class="piece-btn red" data-piece-id="r-pawn-4" data-name="兵" data-color="red" title="紅兵">兵</button>
+        <button type="button" class="piece-btn red" data-piece-id="r-pawn-5" data-name="兵" data-color="red" title="紅兵">兵</button>
+
+        <!-- 黑方 16 子 -->
+        <button type="button" class="piece-btn black" data-piece-id="b-king" data-name="將" data-color="black" title="黑將">將</button>
+        <button type="button" class="piece-btn black" data-piece-id="b-advisor-1" data-name="士" data-color="black" title="黑士">士</button>
+        <button type="button" class="piece-btn black" data-piece-id="b-advisor-2" data-name="士" data-color="black" title="黑士">士</button>
+        <button type="button" class="piece-btn black" data-piece-id="b-elephant-1" data-name="象" data-color="black" title="黑象">象</button>
+        <button type="button" class="piece-btn black" data-piece-id="b-elephant-2" data-name="象" data-color="black" title="黑象">象</button>
+        <button type="button" class="piece-btn black" data-piece-id="b-horse-1" data-name="馬" data-color="black" title="黑馬">馬</button>
+        <button type="button" class="piece-btn black" data-piece-id="b-horse-2" data-name="馬" data-color="black" title="黑馬">馬</button>
+        <button type="button" class="piece-btn black" data-piece-id="b-rook-1" data-name="車" data-color="black" title="黑車">車</button>
+        <button type="button" class="piece-btn black" data-piece-id="b-rook-2" data-name="車" data-color="black" title="黑車">車</button>
+        <button type="button" class="piece-btn black" data-piece-id="b-cannon-1" data-name="砲" data-color="black" title="黑砲">砲</button>
+        <button type="button" class="piece-btn black" data-piece-id="b-cannon-2" data-name="砲" data-color="black" title="黑砲">砲</button>
+        <button type="button" class="piece-btn black" data-piece-id="b-pawn-1" data-name="卒" data-color="black" title="黑卒">卒</button>
+        <button type="button" class="piece-btn black" data-piece-id="b-pawn-2" data-name="卒" data-color="black" title="黑卒">卒</button>
+        <button type="button" class="piece-btn black" data-piece-id="b-pawn-3" data-name="卒" data-color="black" title="黑卒">卒</button>
+        <button type="button" class="piece-btn black" data-piece-id="b-pawn-4" data-name="卒" data-color="black" title="黑卒">卒</button>
+        <button type="button" class="piece-btn black" data-piece-id="b-pawn-5" data-name="卒" data-color="black" title="黑卒">卒</button>
+      </div>
+
+      <div class="ctrl-row">
+        <button type="button" id="btnResetFive" class="btn btn-ghost">清除重選</button>
+        <button type="button" id="btnDivine" class="btn btn-primary" disabled>開始解盤</button>
+      </div>
+
+      <div id="fiveResult" class="result-box"></div>
+    </section>
+
+    <!-- 命運解碼室 -->
+    <section id="panel-full" class="panel">
+      <p class="full-hint">
+        可使用「標準開局」或「隨機散落」產生盤面；點擊個別格子可新增或移除棋子。
+      </p>
+
+      <div class="board-actions">
+        <button type="button" id="btnInitFull" class="btn btn-ghost">標準開局</button>
+        <button type="button" id="btnRandomFull" class="btn btn-ghost">隨機散落</button>
+        <button type="button" id="btnClearFull" class="btn btn-ghost">清空棋盤</button>
+        <button type="button" id="btnDecodeFull" class="btn btn-primary">全盤解碼</button>
+      </div>
+
+      <div class="full-board-wrap">
+        <div id="fullBoard" class="xiangqi-board" aria-label="象棋全盤"></div>
+      </div>
+
+      <div id="fullResult" class="result-box"></div>
+    </section>
+
+    <footer>象棋卜卦・命理邏輯引擎示範｜結果僅供娛樂與自我反思參考</footer>
+  </main>
+
+  <script defer>
+    "use strict";
+
+    /* =========================
+       五子解惑：資料與狀態
+    ========================= */
+
+    const selectedPieces = [];
+    let currentType = "single";
+
+    const PIECE_MEANING = {
+      "帥": "主導、決策權、核心意志與領導力量",
+      "將": "內在權威、掌控、壓力與局勢主控權",
+      "仕": "輔助、文書、謀略、關係中的支持力量",
+      "士": "守護、忠誠、制度、內部協調",
+      "相": "資源、穩守、社會連結與長期布局",
+      "象": "守成、庇蔭、厚實基礎與保護力量",
+      "馬": "行動、轉折、變通、快速推進",
+      "車": "執行、衝力、效率、直線突破",
+      "炮": "策略、借力、蓄勢與關鍵爆發",
+      "砲": "遠攻、計謀、突發變局與間接影響",
+      "兵": "累積、起步、前進與基層努力",
+      "卒": "務實、承擔、穩步推進與現實考驗"
+    };
+
+    const POS_MEANING = {
+      1: "中宮：核心動機與當下狀態",
+      2: "左輔：支持、過去影響與貴人助力",
+      3: "右弼：阻力、外在牽引與未來變化",
+      4: "天位：理想、目標與外在機遇",
+      5: "地位：根基、現實條件與可能結果"
+    };
+
+    function updateFiveSlots() {
+      for (let position = 1; position <= 5; position++) {
+        const slot = document.querySelector(`.slot[data-pos="${position}"]`);
+        const charElement = slot.querySelector(".piece-char");
+        const piece = selectedPieces[position - 1];
+
+        if (piece) {
+          charElement.textContent = piece.name;
+          charElement.style.color = piece.color === "red" ? "#ff705f" : "#a8c7e5";
+          slot.classList.add("filled");
+        } else {
+          charElement.textContent = "";
+          charElement.style.color = "";
+          slot.classList.remove("filled");
+        }
+      }
     }
-  });
-  renderFullBoard();
-  hideFullResult();
-}
 
-function clearFull() {
-  boardState = Array.from({length: BOARD_ROWS}, () => Array(BOARD_COLS).fill(null));
-  renderFullBoard();
-  hideFullResult();
-}
+    function updateFiveHint() {
+      const hint = document.getElementById("fiveHint");
+      const divineButton = document.getElementById("btnDivine");
+      const count = selectedPieces.length;
 
-function hideFullResult() {
-  const box = document.getElementById('fullResult');
-  box.classList.remove('show');
-  box.
+      divineButton.disabled = count !== 5;
+
+      if (count === 0) {
+        hint.textContent = "請憑直覺依序點選下方 5 顆棋子，填入位置 1～5。";
+      } else if (count < 5) {
+        hint.textContent = `目前已選擇 ${count}／5 顆棋子，請繼續選擇。`;
+      } else {
+        hint.textContent = "五子已就位，可開始解盤，或按「清除重選」重新選擇。";
+      }
+    }
+
+    function selectPiece(button) {
+      if (selectedPieces.length >= 5 || button.disabled) {
+        return;
+      }
+
+      const piece = {
+        id: button.dataset.pieceId,
+        name: button.dataset.name,
+        color: button.dataset.color
+      };
+
+      selectedPieces.push(piece);
+      button.disabled = true;
+      button.classList.add("selected");
+
+      updateFiveSlots();
+      updateFiveHint();
+    }
+
+    function resetFive() {
+      selectedPieces.length = 0;
+
+      document.querySelectorAll(".piece-btn").forEach((button) => {
+        button.disabled = false;
+        button.classList.remove("selected");
+      });
+
+      updateFiveSlots();
+      updateFiveHint();
+
+      const result = document.getElementById("fiveResult");
+      result.classList.remove("show");
+      result.innerHTML = "";
+    }
+
+    function getPositionAdvice(piece, position) {
+      if (position === 1 && ["帥", "將"].includes(piece.name)) {
+        return "主將居中，代表你的核心意志已有明確方向；宜在關鍵問題上果斷定調。";
+      }
+
+      if (position === 1 && ["兵", "卒"].includes(piece.name)) {
+        return "中宮見兵卒，表示事情仍在起步或打底階段；先累積實力，比急於求成更重要。";
+      }
+
+      if ([2, 3].includes(position) && ["車", "馬"].includes(piece.name)) {
+        return "側翼出現強力行動子，外部助力或壓力都會較為明顯；應預留彈性應對。";
+      }
+
+      if (position === 4 && ["炮", "砲"].includes(piece.name)) {
+        return "天位見炮砲，象徵可能出現策略性機會、遠方消息或出其不意的轉機。";
+      }
+
+      if (position === 5 &&
